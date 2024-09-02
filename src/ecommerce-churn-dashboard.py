@@ -5,15 +5,16 @@ import plotly.express as px
 import pandas as pd
 import joblib
 from sklearn.preprocessing import StandardScaler
+import os
 
 # Load the data and models
-df = pd.read_csv('ecommerce_data.csv')
-rf_model = joblib.load('rf_model.joblib')
-xgb_model = joblib.load('xgb_model.joblib')
-scaler = StandardScaler()
+df = pd.read_csv('data/preprocessed_data.csv')
+rf_model = joblib.load('models/rf_model.joblib')
+xgb_model = joblib.load('models/xgb_model.joblib')
 
-# Preprocess the data
+# Prepare the data for prediction
 X = df[['Recency', 'Frequency', 'MonetaryValue', 'AvgOrderValue', 'TotalTransactions']]
+scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
 # Make predictions
@@ -22,6 +23,7 @@ df['xgb_churn_prob'] = xgb_model.predict_proba(X_scaled)[:, 1]
 
 # Create the Dash app
 app = dash.Dash(__name__)
+server = app.server  # Expose the server variable for Render
 
 app.layout = html.Div([
     html.H1("E-commerce Customer Churn Dashboard"),
@@ -38,9 +40,7 @@ app.layout = html.Div([
     
     dcc.Graph(id='churn-probability-histogram'),
     
-    dcc.Graph(id='segment-scatter-plot'),
-    
-    dcc.Graph(id='feature-importance-plot')
+    dcc.Graph(id='recency-frequency-scatter')
 ])
 
 @app.callback(
@@ -49,36 +49,20 @@ app.layout = html.Div([
 )
 def update_churn_histogram(selected_model):
     prob_column = 'rf_churn_prob' if selected_model == 'rf' else 'xgb_churn_prob'
-    fig = px.histogram(df, x=prob_column, nbins=30, title=f'Churn Probability Distribution ({selected_model.upper()})')
+    fig = px.histogram(df, x=prob_column, nbins=30,
+                       title=f'Churn Probability Distribution ({selected_model.upper()})')
     return fig
 
 @app.callback(
-    Output('segment-scatter-plot', 'figure'),
+    Output('recency-frequency-scatter', 'figure'),
     Input('model-selector', 'value')
 )
-def update_segment_scatter(selected_model):
+def update_recency_frequency_scatter(selected_model):
     prob_column = 'rf_churn_prob' if selected_model == 'rf' else 'xgb_churn_prob'
-    fig = px.scatter(df, x='Frequency', y='MonetaryValue', color=prob_column,
-                     title='Customer Segments', color_continuous_scale='viridis')
-    return fig
-
-@app.callback(
-    Output('feature-importance-plot', 'figure'),
-    Input('model-selector', 'value')
-)
-def update_feature_importance(selected_model):
-    if selected_model == 'rf':
-        importance = rf_model.feature_importances_
-    else:
-        importance = xgb_model.feature_importances_
-    
-    feature_importance = pd.DataFrame({
-        'feature': X.columns,
-        'importance': importance
-    }).sort_values('importance', ascending=True)
-    
-    fig = px.bar(feature_importance, x='importance', y='feature', orientation='h',
-                 title=f'Feature Importance ({selected_model.upper()})')
+    fig = px.scatter(df, x='Recency', y='Frequency', color=prob_column,
+                     title='Recency vs Frequency',
+                     labels={'Recency': 'Days Since Last Purchase', 'Frequency': 'Number of Purchases'},
+                     color_continuous_scale='viridis')
     return fig
 
 if __name__ == '__main__':
