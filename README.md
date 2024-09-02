@@ -2,6 +2,10 @@
 
 This project aims to predict customer churn for an e-commerce business using machine learning techniques. It includes data preparation, exploratory data analysis, model development, and an interactive dashboard for visualizing results.
 
+## Live Dashboard
+
+https://ecommerce-churn-prediction.onrender.com/
+
 ## Project Structure
 
 - `data/`: Contains the raw dataset and preprocessed data
