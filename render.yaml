@@ -6,4 +6,4 @@ services:
     startCommand: gunicorn src.dashboard:server
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.1
+        value: 3.11.4
