@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ecommerce-churn-dashboard
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn src.dashboard:server
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.1
