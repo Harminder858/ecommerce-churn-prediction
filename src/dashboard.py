@@ -9,8 +9,8 @@ import os
 
 # Load the data and models
 df = pd.read_csv('data/preprocessed_data.csv')
-rf_model = joblib.load('models/rf_model.joblib')
-xgb_model = joblib.load('models/xgb_model.joblib')
+rf_model = joblib.load('data/rf_model.joblib')
+xgb_model = joblib.load('data/xgb_model.joblib')
 
 # Prepare the data for prediction
 X = df[['Recency', 'Frequency', 'MonetaryValue', 'AvgOrderValue', 'TotalTransactions']]
