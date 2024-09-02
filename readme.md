@@ -25,7 +25,7 @@ This project aims to predict customer churn for an e-commerce business using mac
 2. Install required packages: `pip install -r requirements.txt`
 3. Download the "Online Retail II" dataset from the [UCI Machine Learning Repository](https://archive.ics.uci.edu/ml/datasets/Online+Retail+II) and place `online_retail_II.xlsx` in the `data/` directory
 4. Run data preparation script: `python src/data_preparation.py`
-5. Open and run the Jupyter notebook: `jupyter notebook notebooks/churn_prediction_analysis.ipynb`
+5. Open and run the vs code from: `jupyter notebook notebooks/churn_prediction_analysis.py`
 6. Launch the dashboard: `python src/dashboard.py`
 
 ## Features
@@ -36,19 +36,4 @@ This project aims to predict customer churn for an e-commerce business using mac
 - Customer segmentation using K-means clustering
 - Interactive dashboard for visualizing churn predictions and customer segments
 
-## Results
 
-(Briefly describe your key findings and model performance)
-
-## Future Work
-
-- Implement more advanced feature engineering techniques
-- Explore deep learning models for churn prediction
-- Develop a more comprehensive dashboard with additional visualizations
-- Implement model interpretability techniques (e.g., SHAP values)
-
-## Contact
-
-[Your Name] - [Your Email]
-
-Project Link: [https://github.com/yourusername/ecommerce-churn-prediction](https://github.com/yourusername/ecommerce-churn-prediction)
