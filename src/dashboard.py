@@ -61,10 +61,29 @@ def update_churn_histogram(selected_model):
 )
 def update_recency_frequency_scatter(selected_model):
     prob_column = f'{selected_model}_churn_prob'
-    fig = px.scatter(df, x='Recency', y='Frequency', color=prob_column,
-                     title='Recency vs Frequency',
-                     labels={'Recency': 'Days Since Last Purchase', 'Frequency': 'Number of Purchases'},
-                     color_continuous_scale='Viridis')
+    
+    # Create bins for Recency and Frequency
+    recency_bins = pd.cut(df['Recency'], bins=5, labels=['Very Recent', 'Recent', 'Moderate', 'Old', 'Very Old'])
+    frequency_bins = pd.cut(df['Frequency'], bins=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+    
+    # Calculate average churn probability for each bin combination
+    grouped_data = df.groupby([recency_bins, frequency_bins])[prob_column].mean().reset_index()
+    grouped_data.columns = ['Recency', 'Frequency', 'Avg_Churn_Prob']
+    
+    # Create heatmap
+    fig = px.density_heatmap(grouped_data, x='Recency', y='Frequency', z='Avg_Churn_Prob',
+                             title='Recency vs Frequency: Average Churn Probability',
+                             labels={'Recency': 'Recency (Days Since Last Purchase)', 
+                                     'Frequency': 'Frequency (Number of Purchases)',
+                                     'Avg_Churn_Prob': 'Avg Churn Probability'},
+                             color_continuous_scale='Viridis_r')
+    
+    fig.update_layout(
+        xaxis_title='Recency',
+        yaxis_title='Frequency',
+        coloraxis_colorbar=dict(title='Avg Churn Probability')
+    )
+    
     return fig
 
 @app.callback(
@@ -99,6 +118,7 @@ def update_age_distribution(selected_model):
                        title='Customer Age Distribution',
                        labels={'CustomerAge': 'Age'},
                        color_discrete_sequence=[color_scheme[3]])
+    fig.update_xaxes(range=[18, 80])  # Set x-axis range to match the data generation
     return fig
 
 @app.callback(
