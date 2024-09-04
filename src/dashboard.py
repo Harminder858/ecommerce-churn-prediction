@@ -7,6 +7,9 @@ import numpy as np
 # Load the data
 df = pd.read_csv('data/preprocessed_data.csv')
 
+# Calculate Customer Lifetime Value (CLV)
+df['CLV'] = df['Frequency'] * df['MonetaryValue']
+
 # Create the Dash app
 app = Dash(__name__)
 server = app.server  # Expose the server variable for Render
@@ -29,7 +32,7 @@ app.layout = html.Div([
     
     html.Div([
         dcc.Graph(id='churn-probability-histogram', style={'width': '50%', 'display': 'inline-block'}),
-        dcc.Graph(id='recency-frequency-scatter', style={'width': '50%', 'display': 'inline-block'})
+        dcc.Graph(id='clv-distribution', style={'width': '50%', 'display': 'inline-block'})
     ]),
     
     html.Div([
@@ -56,33 +59,25 @@ def update_churn_histogram(selected_model):
     return fig
 
 @app.callback(
-    Output('recency-frequency-scatter', 'figure'),
+    Output('clv-distribution', 'figure'),
     Input('model-selector', 'value')
 )
-def update_recency_frequency_scatter(selected_model):
+def update_clv_distribution(selected_model):
     prob_column = f'{selected_model}_churn_prob'
     
-    # Create bins for Recency and Frequency
-    recency_bins = pd.cut(df['Recency'], bins=5, labels=['Very Recent', 'Recent', 'Moderate', 'Old', 'Very Old'])
-    frequency_bins = pd.cut(df['Frequency'], bins=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+    # Create CLV bins
+    df['CLV_bins'] = pd.qcut(df['CLV'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
     
-    # Calculate average churn probability for each bin combination
-    grouped_data = df.groupby([recency_bins, frequency_bins])[prob_column].mean().reset_index()
-    grouped_data.columns = ['Recency', 'Frequency', 'Avg_Churn_Prob']
+    # Calculate average churn probability for each CLV bin
+    clv_churn = df.groupby('CLV_bins')[prob_column].mean().reset_index()
     
-    # Create heatmap
-    fig = px.density_heatmap(grouped_data, x='Recency', y='Frequency', z='Avg_Churn_Prob',
-                             title='Recency vs Frequency: Average Churn Probability',
-                             labels={'Recency': 'Recency (Days Since Last Purchase)', 
-                                     'Frequency': 'Frequency (Number of Purchases)',
-                                     'Avg_Churn_Prob': 'Avg Churn Probability'},
-                             color_continuous_scale='Viridis_r')
+    fig = px.bar(clv_churn, x='CLV_bins', y=prob_column,
+                 title='Average Churn Probability by Customer Lifetime Value',
+                 labels={'CLV_bins': 'Customer Lifetime Value', prob_column: 'Avg Churn Probability'},
+                 color=prob_column,
+                 color_continuous_scale='Viridis_r')
     
-    fig.update_layout(
-        xaxis_title='Recency',
-        yaxis_title='Frequency',
-        coloraxis_colorbar=dict(title='Avg Churn Probability')
-    )
+    fig.update_layout(xaxis_title='Customer Lifetime Value', yaxis_title='Average Churn Probability')
     
     return fig
 
