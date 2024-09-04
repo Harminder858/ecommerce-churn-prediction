@@ -7,9 +7,6 @@ import numpy as np
 # Load the data
 df = pd.read_csv('data/preprocessed_data.csv')
 
-# Calculate Customer Lifetime Value (CLV)
-df['CLV'] = df['Frequency'] * df['MonetaryValue']
-
 # Create the Dash app
 app = Dash(__name__)
 server = app.server  # Expose the server variable for Render
@@ -32,13 +29,13 @@ app.layout = html.Div([
     
     html.Div([
         dcc.Graph(id='churn-probability-histogram', style={'width': '50%', 'display': 'inline-block'}),
-        dcc.Graph(id='clv-distribution', style={'width': '50%', 'display': 'inline-block'})
+        dcc.Graph(id='purchase-frequency-aov', style={'width': '50%', 'display': 'inline-block'})
     ]),
     
     html.Div([
         dcc.Graph(id='customer-segments-pie', style={'width': '33%', 'display': 'inline-block'}),
         dcc.Graph(id='country-distribution', style={'width': '33%', 'display': 'inline-block'}),
-        dcc.Graph(id='age-distribution', style={'width': '33%', 'display': 'inline-block'})
+        dcc.Graph(id='age-segments', style={'width': '33%', 'display': 'inline-block'})
     ]),
     
     html.Div([
@@ -59,25 +56,22 @@ def update_churn_histogram(selected_model):
     return fig
 
 @app.callback(
-    Output('clv-distribution', 'figure'),
+    Output('purchase-frequency-aov', 'figure'),
     Input('model-selector', 'value')
 )
-def update_clv_distribution(selected_model):
+def update_purchase_frequency_aov(selected_model):
     prob_column = f'{selected_model}_churn_prob'
     
-    # Create CLV bins
-    df['CLV_bins'] = pd.qcut(df['CLV'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+    fig = px.scatter(df, x='Frequency', y='AvgOrderValue', color=prob_column,
+                     title='Purchase Frequency vs Average Order Value',
+                     labels={'Frequency': 'Purchase Frequency', 'AvgOrderValue': 'Average Order Value'},
+                     color_continuous_scale='Viridis_r')
     
-    # Calculate average churn probability for each CLV bin
-    clv_churn = df.groupby('CLV_bins')[prob_column].mean().reset_index()
-    
-    fig = px.bar(clv_churn, x='CLV_bins', y=prob_column,
-                 title='Average Churn Probability by Customer Lifetime Value',
-                 labels={'CLV_bins': 'Customer Lifetime Value', prob_column: 'Avg Churn Probability'},
-                 color=prob_column,
-                 color_continuous_scale='Viridis_r')
-    
-    fig.update_layout(xaxis_title='Customer Lifetime Value', yaxis_title='Average Churn Probability')
+    fig.update_layout(
+        xaxis_title='Purchase Frequency',
+        yaxis_title='Average Order Value',
+        coloraxis_colorbar=dict(title='Churn Probability')
+    )
     
     return fig
 
@@ -105,15 +99,27 @@ def update_country_distribution(selected_model):
     return fig
 
 @app.callback(
-    Output('age-distribution', 'figure'),
+    Output('age-segments', 'figure'),
     Input('model-selector', 'value')
 )
-def update_age_distribution(selected_model):
-    fig = px.histogram(df, x='CustomerAge', nbins=20,
-                       title='Customer Age Distribution',
-                       labels={'CustomerAge': 'Age'},
-                       color_discrete_sequence=[color_scheme[3]])
-    fig.update_xaxes(range=[18, 80])  # Set x-axis range to match the data generation
+def update_age_segments(selected_model):
+    # Create age groups
+    df['AgeGroup'] = pd.cut(df['CustomerAge'], 
+                            bins=[0, 25, 35, 45, 55, 65, 100],
+                            labels=['18-25', '26-35', '36-45', '46-55', '56-65', '65+'])
+    
+    age_segment_counts = df['AgeGroup'].value_counts().sort_index()
+    
+    fig = px.bar(x=age_segment_counts.index, y=age_segment_counts.values,
+                 title='Customer Age Segments',
+                 labels={'x': 'Age Group', 'y': 'Number of Customers'},
+                 color_discrete_sequence=[color_scheme[3]])
+    
+    fig.update_layout(
+        xaxis_title='Age Group',
+        yaxis_title='Number of Customers'
+    )
+    
     return fig
 
 @app.callback(
@@ -121,7 +127,7 @@ def update_age_distribution(selected_model):
     Input('model-selector', 'value')
 )
 def update_feature_importance(selected_model):
-    # This is a mock-up. In a real scenario, you'd get this from your model
+    # mock up for dashboard
     features = ['Recency', 'Frequency', 'MonetaryValue', 'CustomerAge', 'TotalProducts']
     importances = np.random.rand(len(features))
     importances = importances / importances.sum()
