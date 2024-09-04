@@ -63,10 +63,9 @@ def update_rfm_heatmap(selected_model):
     prob_column = f'{selected_model}_churn_prob'
     
     df['R_Segment'] = pd.qcut(df['Recency'], q=5, labels=['1', '2', '3', '4', '5'])
-    df['F_Segment'] = pd.qcut(df['Frequency'], q=5, labels=['1', '2', '3', '4', '5'])
-    df['M_Segment'] = pd.qcut(df['MonetaryValue'], q=5, labels=['1', '2', '3', '4', '5'])
+    df['F_Segment'] = pd.qcut(df['Frequency'], q=5, labels=['5', '4', '3', '2', '1'])
     
-    rfm_seg_map = df.groupby(['R_Segment', 'F_Segment', 'M_Segment'])[prob_column].mean().reset_index()
+    rfm_seg_map = df.groupby(['R_Segment', 'F_Segment'])[prob_column].mean().reset_index()
     
     fig = px.density_heatmap(rfm_seg_map, x='R_Segment', y='F_Segment', z=prob_column,
                              title='RFM Segmentation Heatmap',
@@ -75,7 +74,8 @@ def update_rfm_heatmap(selected_model):
     
     fig.update_layout(
         xaxis_title='Recency (1=Best, 5=Worst)',
-        yaxis_title='Frequency (1=Worst, 5=Best)',
+        yaxis_title='Frequency (5=Best, 1=Worst)',
+        coloraxis_colorbar=dict(title='Avg Churn Probability')
     )
     
     return fig
