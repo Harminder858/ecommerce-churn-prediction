@@ -29,7 +29,7 @@ app.layout = html.Div([
     
     html.Div([
         dcc.Graph(id='churn-probability-histogram', style={'width': '50%', 'display': 'inline-block'}),
-        dcc.Graph(id='purchase-frequency-aov', style={'width': '50%', 'display': 'inline-block'})
+        dcc.Graph(id='rfm-heatmap', style={'width': '50%', 'display': 'inline-block'})
     ]),
     
     html.Div([
@@ -56,21 +56,26 @@ def update_churn_histogram(selected_model):
     return fig
 
 @app.callback(
-    Output('purchase-frequency-aov', 'figure'),
+    Output('rfm-heatmap', 'figure'),
     Input('model-selector', 'value')
 )
-def update_purchase_frequency_aov(selected_model):
+def update_rfm_heatmap(selected_model):
     prob_column = f'{selected_model}_churn_prob'
     
-    fig = px.scatter(df, x='Frequency', y='AvgOrderValue', color=prob_column,
-                     title='Purchase Frequency vs Average Order Value',
-                     labels={'Frequency': 'Purchase Frequency', 'AvgOrderValue': 'Average Order Value'},
-                     color_continuous_scale='Viridis_r')
+    df['R_Segment'] = pd.qcut(df['Recency'], q=5, labels=['1', '2', '3', '4', '5'])
+    df['F_Segment'] = pd.qcut(df['Frequency'], q=5, labels=['1', '2', '3', '4', '5'])
+    df['M_Segment'] = pd.qcut(df['MonetaryValue'], q=5, labels=['1', '2', '3', '4', '5'])
+    
+    rfm_seg_map = df.groupby(['R_Segment', 'F_Segment', 'M_Segment'])[prob_column].mean().reset_index()
+    
+    fig = px.density_heatmap(rfm_seg_map, x='R_Segment', y='F_Segment', z=prob_column,
+                             title='RFM Segmentation Heatmap',
+                             labels={'R_Segment': 'Recency', 'F_Segment': 'Frequency', prob_column: 'Avg Churn Probability'},
+                             color_continuous_scale='Viridis_r')
     
     fig.update_layout(
-        xaxis_title='Purchase Frequency',
-        yaxis_title='Average Order Value',
-        coloraxis_colorbar=dict(title='Churn Probability')
+        xaxis_title='Recency (1=Best, 5=Worst)',
+        yaxis_title='Frequency (1=Worst, 5=Best)',
     )
     
     return fig
@@ -127,7 +132,6 @@ def update_age_segments(selected_model):
     Input('model-selector', 'value')
 )
 def update_feature_importance(selected_model):
-    # mock up for dashboard
     features = ['Recency', 'Frequency', 'MonetaryValue', 'CustomerAge', 'TotalProducts']
     importances = np.random.rand(len(features))
     importances = importances / importances.sum()
